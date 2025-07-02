@@ -8,14 +8,25 @@ import org.telegram.telegrambots.updatesreceivers.DefaultBotSession;
 
 public class MyGameBot extends TelegramLongPollingBot {
 
+    //region 🧱 Variables
+
     private final String botToken;
     private final String botUsername;
+
+    //endregion
+
+    //region 🛠️ Constructor
 
     public MyGameBot() {
         Dotenv dotenv = Dotenv.load();
         this.botToken = dotenv.get("BOT_TOKEN");
         this.botUsername = "LiarsDiceGame_Bot";
     }
+
+    //endregion
+
+
+    //region ⚠️Overrides
 
     @Override
     public String getBotUsername() {
@@ -49,12 +60,5 @@ public class MyGameBot extends TelegramLongPollingBot {
         }
     }
 
-    public static void main(String[] args) {
-        try {
-            TelegramBotsApi botsApi = new TelegramBotsApi(DefaultBotSession.class);
-            botsApi.registerBot(new MyGameBot());
-        } catch (TelegramApiException e) {
-            e.printStackTrace();
-        }
-    }
+    //endregion
 }
