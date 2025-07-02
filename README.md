@@ -1,5 +1,3 @@
-# LiarsDice Telegram Bot 🎲
-
 A **work-in-progress** Telegram bot built in Java for playing Liars Dice directly in chat.
 
 ⚙️ **Tech Stack**
@@ -11,7 +9,7 @@ A **work-in-progress** Telegram bot built in Java for playing Liars Dice directl
 
 # 🎲 Liars Dice Telegram Bot
 
-This bot brings the classic **Liars Dice** game into Telegram as a text-based 1-on-1 experience.  
+This bot brings the classic **Liars Dice** game into Telegram as a (for now) text-based 1-on-1 experience.  
 Below are the official rules and win conditions implemented in the bot.
 
 ---
