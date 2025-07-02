@@ -8,6 +8,7 @@ public class Player {
 
     private final String name;
     private DiceCup diceCup;
+    private boolean rerollUsed = false;
 
     //endregion
 
@@ -47,6 +48,14 @@ public class Player {
 
     public boolean isEliminated() {
         return diceCup.getNumberOfDice() < 2;
+    }
+
+    public boolean hasUsedReroll() {
+        return rerollUsed;
+    }
+
+    public void useReroll() {
+        rerollUsed = true;
     }
 
     //endregion
