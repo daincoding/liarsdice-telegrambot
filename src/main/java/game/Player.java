@@ -1,5 +1,7 @@
 package game;
 
+import java.util.List;
+
 public class Player {
 
     //region 🧱 Variables
@@ -22,6 +24,30 @@ public class Player {
     //endregion
 
     //region ⚙️ Methods
+
+    public void rollAllDice() {
+        diceCup.rollAll();
+    }
+
+    public void rerollSelectedDice(List<Integer> dices) {
+        diceCup.rollSelected(dices);
+    }
+
+    public List<Integer> revealDice() {
+        return diceCup.getCurrentDice();
+    }
+
+    public void loseDice(int count) {
+        diceCup.removeDice(count);
+    }
+
+    //endregion
+
+    //region ✅ Validation
+
+    public boolean isEliminated() {
+        return diceCup.getNumberOfDice() < 2;
+    }
 
     //endregion
 
