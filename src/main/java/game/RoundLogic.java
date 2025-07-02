@@ -166,7 +166,7 @@ public class RoundLogic {
         if (isMaxPossibleCall(quantity, faceValue) && actualCount == quantity) {
             System.out.println("🏆 " + previousPlayer.getName()
                     + " made the max possible call and it was TRUE!");
-            System.out.println("🎉 " + previousPlayer.getName() + " wins the entire match!");
+            System.out.println("🎉 " + previousPlayer.getName() + " wins the entire match! THIS IS SO RARE");
 
             // Keep only the winner in the GameState
             List<Player> winnerList = new ArrayList<>();
