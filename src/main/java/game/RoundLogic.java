@@ -184,44 +184,52 @@ public class RoundLogic {
     }
 
     // 📝 Resolve the Lie
-    public void resolveLie() {
-        System.out.println("\n=== REVEALING ALL DICE ===");
+    public String resolveLie() {
+        StringBuilder sb = new StringBuilder();
+
+        sb.append("\n=== 🎲 *ALLE WÜRFEL WERDEN ENTHÜLLT!* ===\n");
         for (Player player : gameState.getPlayers()) {
-            System.out.println(player.getName() + "'s dice: " + player.revealDice());
+            sb.append("🎲 *").append(player.getName()).append("*: ")
+                    .append(player.revealDice())
+                    .append("\n");
         }
-        System.out.println("=========================\n");
+        sb.append("============================\n\n");
 
         int quantity = gameState.getCurrentQuantityCalled();
         int faceValue = gameState.getCurrentFaceValueCalled();
 
         int actualCount = gameState.getTotalDiceForFace(faceValue);
-        System.out.println("Total dice showing " + faceValue + ": " + actualCount);
+        sb.append("Es lagen tatsächlich *").append(actualCount).append(" × ").append(faceValue).append("* auf dem Tisch.\n");
 
         Player previousPlayer = getPreviousPlayer();
 
         if (isMaxPossibleCall(quantity, faceValue) && actualCount == quantity) {
-            System.out.println("🏆 " + previousPlayer.getName()
-                    + " made the max possible call and it was TRUE!");
-            System.out.println("🎉 " + previousPlayer.getName() + " wins the entire match! THIS IS SO RARE");
-
+            sb.append("\n🏆 *").append(previousPlayer.getName())
+                    .append("* hat das Maximum richtig gecallt und gewinnt sofort das ganze Spiel!");
             List<Player> winnerList = new ArrayList<>();
             winnerList.add(previousPlayer);
             gameState.setPlayers(winnerList);
             roundEnded = true;
-            return;
+            return sb.toString();
         }
 
         if (actualCount >= quantity) {
-            System.out.println("✅ The call was TRUE! Challenger loses 1 die.");
+            sb.append("\n✅ *Der Call war WAHR!* ")
+                    .append(gameState.getCurrentPlayer().getName())
+                    .append(" verliert 1 Würfel.");
             gameState.getCurrentPlayer().loseDice(1);
         } else {
-            System.out.println("❌ The call was FALSE! Previous player loses 2 dice.");
+            sb.append("\n❌ *Der Call war FALSCH!* ")
+                    .append(previousPlayer.getName())
+                    .append(" verliert 2 Würfel.");
             previousPlayer.loseDice(2);
         }
 
         gameState.setCurrentCall(0, 0);
         gameState.removeEliminatedPlayers();
         roundEnded = true;
+
+        return sb.toString();
     }
 
     // 📝 Who made the last call
