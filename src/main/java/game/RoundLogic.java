@@ -8,7 +8,7 @@ public class RoundLogic {
 
     //region 🧱 Variables
 
-    private GameState gameState;
+    private final GameState gameState;
     private boolean roundEnded;
 
     //endregion
@@ -24,61 +24,95 @@ public class RoundLogic {
 
     //region ⚙️ Methods
 
-    /*
-     * Play a single round of Liars Dice.
-     * (CLI prototype version for now.)
-     */
-
+    // 📝 Game Start
     public void playRound() {
         Scanner scanner = new Scanner(System.in);
-
-        // Roll dice for everyone
-        for (Player player : gameState.getPlayers()) {
-            player.rollAllDice();
-            System.out.println(player.getName() + " rolled: " + player.revealDice());
-        }
 
         while (!roundEnded) {
             Player currentPlayer = gameState.getCurrentPlayer();
 
-            System.out.println("\n--- " + currentPlayer.getName() + "'s turn ---");
-            System.out.println("Current call: "
-                    + gameState.getCurrentQuantityCalled()
-                    + " x " + gameState.getCurrentFaceValueCalled());
-            System.out.println("Your dice: " + currentPlayer.revealDice());
-
-            if (!currentPlayer.hasUsedReroll()) {
-                System.out.println("Enter your move (e.g. '3 4' for call, 'reroll 0 2', or 'lie'):");
+            if (currentPlayer instanceof BotPlayer) {
+                handleBotTurn((BotPlayer) currentPlayer);
             } else {
-                System.out.println("Enter your move (e.g. '3 4' for call, or 'lie'):");
-            }
-
-            String input = scanner.nextLine().trim();
-
-            if (input.equalsIgnoreCase("lie")) {
-                if (gameState.getCurrentQuantityCalled() == 0) {
-                    System.out.println("⚠️ You can't call a lie before any call has been made.");
-                    continue;
-                }
-                resolveLie();
-                roundEnded = true;
-            } else if (input.startsWith("reroll")) {
-                if (currentPlayer.hasUsedReroll()) {
-                    System.out.println("⚠️ You already used your reroll this match.");
-                } else {
-                    handleReroll(currentPlayer, input);
-                    currentPlayer.useReroll();
-                }
-            } else {
-                handleNewCall(input, currentPlayer);
+                handleHumanTurn(currentPlayer, scanner);
             }
         }
     }
 
-    /**
-     * Handle rerolling dice for a player.
-     */
-    private void handleReroll(Player player, String input) {
+    // 📝 Bot Turn
+    private void handleBotTurn(BotPlayer botPlayer) {
+        int currentQuantity = gameState.getCurrentQuantityCalled();
+        int currentFace = gameState.getCurrentFaceValueCalled();
+
+        boolean callLie = false;
+
+        if (currentQuantity > 0) {
+            callLie = botPlayer.shouldCallLie(
+                    currentQuantity,
+                    currentFace,
+                    gameState.getTotalDiceCount()
+            );
+        }
+
+        if (callLie) {
+            System.out.println("🤖 Bot shouts: YOU LIE!");
+            resolveLie();
+        } else {
+            if (!botPlayer.hasUsedReroll() && botPlayer.shouldReroll()) {
+                System.out.println("🤖 Bot decides to reroll!");
+                List<Integer> indices = botPlayer.chooseDiceToReroll();
+                botPlayer.rerollSelectedDice(indices);
+                botPlayer.useReroll();
+//                System.out.println("🤖 Bot's new dice: " + botPlayer.revealDice());
+            }
+
+            String call = botPlayer.decideNextCall(
+                    currentQuantity,
+                    currentFace,
+                    gameState.getTotalDiceCount()
+            );
+
+            System.out.println("🤖 Bot calls: " + call);
+            handleNewCall(call, botPlayer);
+        }
+    }
+
+    // 📝 Human Turn
+    private void handleHumanTurn(Player player, Scanner scanner) {
+        System.out.println("\n--- " + player.getName() + "'s turn ---");
+        System.out.println("Current call: "
+                + gameState.getCurrentQuantityCalled()
+                + " x " + gameState.getCurrentFaceValueCalled());
+        System.out.println("Your dice: " + player.revealDice());
+
+        if (!player.hasUsedReroll()) {
+            System.out.println("Enter your move (e.g. '3 4' for call, 'reroll 0 2', or 'lie'):");
+        } else {
+            System.out.println("Enter your move (e.g. '3 4' for call, or 'lie'):");
+        }
+
+        String input = scanner.nextLine().trim();
+
+        if (input.equalsIgnoreCase("lie")) {
+            if (gameState.getCurrentQuantityCalled() == 0) {
+                System.out.println("⚠️ You can't call a lie before any call has been made.");
+                return;
+            }
+            resolveLie();
+        } else if (input.startsWith("reroll")) {
+            if (player.hasUsedReroll()) {
+                System.out.println("⚠️ You already used your reroll this match.");
+            } else {
+                handleReroll(player, input, scanner);
+                player.useReroll();
+            }
+        } else {
+            handleNewCall(input, player);
+        }
+    }
+
+    // 📝 Handle rerolling dice for a player.
+    private void handleReroll(Player player, String input, Scanner scanner) {
         String[] parts = input.split(" ");
         List<Integer> indices = new ArrayList<>();
         for (int i = 1; i < parts.length; i++) {
@@ -90,7 +124,6 @@ public class RoundLogic {
 
         System.out.println("Now you must make a higher call (e.g. '3 4'):");
 
-        Scanner scanner = new Scanner(System.in);
         boolean validCall = false;
 
         while (!validCall) {
@@ -122,9 +155,8 @@ public class RoundLogic {
         }
     }
 
-    /**
-     * Handle making a new call.
-     */
+    // 📝 Handle making a new call
+
     private void handleNewCall(String input, Player currentPlayer) {
         try {
             String[] parts = input.split(" ");
@@ -145,15 +177,20 @@ public class RoundLogic {
             System.out.println(currentPlayer.getName()
                     + " calls " + quantity + " x " + faceValue);
             gameState.advanceTurn();
+
         } catch (Exception e) {
             System.out.println("⚠️ Invalid input - Must be higher than previous Call. Please try again.");
         }
     }
 
-    /**
-     * Handle accusation of "You LIE!"
-     */
+    // 📝 Resolve the Lie
     public void resolveLie() {
+        System.out.println("\n=== REVEALING ALL DICE ===");
+        for (Player player : gameState.getPlayers()) {
+            System.out.println(player.getName() + "'s dice: " + player.revealDice());
+        }
+        System.out.println("=========================\n");
+
         int quantity = gameState.getCurrentQuantityCalled();
         int faceValue = gameState.getCurrentFaceValueCalled();
 
@@ -162,16 +199,15 @@ public class RoundLogic {
 
         Player previousPlayer = getPreviousPlayer();
 
-        // ✅ Check for instant win
         if (isMaxPossibleCall(quantity, faceValue) && actualCount == quantity) {
             System.out.println("🏆 " + previousPlayer.getName()
                     + " made the max possible call and it was TRUE!");
             System.out.println("🎉 " + previousPlayer.getName() + " wins the entire match! THIS IS SO RARE");
 
-            // Keep only the winner in the GameState
             List<Player> winnerList = new ArrayList<>();
             winnerList.add(previousPlayer);
             gameState.setPlayers(winnerList);
+            roundEnded = true;
             return;
         }
 
@@ -185,11 +221,10 @@ public class RoundLogic {
 
         gameState.setCurrentCall(0, 0);
         gameState.removeEliminatedPlayers();
+        roundEnded = true;
     }
 
-    /**
-     * Find the player who made the last call.
-     */
+    // 📝 Who made the last call
     private Player getPreviousPlayer() {
         int prevIndex = gameState.getCurrentPlayerIndex() - 1;
         if (prevIndex < 0) {
