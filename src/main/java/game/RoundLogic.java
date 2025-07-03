@@ -157,7 +157,7 @@ public class RoundLogic {
 
     // 📝 Handle making a new call
 
-    private void handleNewCall(String input, Player currentPlayer) {
+    public void handleNewCall(String input, Player currentPlayer) {
         try {
             String[] parts = input.split(" ");
             int quantity = Integer.parseInt(parts[0]);
@@ -239,4 +239,62 @@ public class RoundLogic {
     }
 
     //endregion
+
+    public String playBotTurn(BotPlayer botPlayer) {
+        StringBuilder response = new StringBuilder();
+
+        int currentQuantity = gameState.getCurrentQuantityCalled();
+        int currentFace = gameState.getCurrentFaceValueCalled();
+
+        boolean callLie = false;
+
+        if (currentQuantity > 0) {
+            callLie = botPlayer.shouldCallLie(
+                    currentQuantity,
+                    currentFace,
+                    gameState.getTotalDiceCount()
+            );
+        }
+
+        if (callLie) {
+            response.append("🤖 Bot ruft: Lüge!\n");
+            resolveLie();
+            response.append(showDice());
+        } else {
+            if (!botPlayer.hasUsedReroll() && botPlayer.shouldReroll()) {
+                List<Integer> indices = botPlayer.chooseDiceToReroll();
+                botPlayer.rerollSelectedDice(indices);
+                botPlayer.useReroll();
+                response.append("🤖 Bot hat Würfel neu geworfen.\n");
+            }
+
+            String call = botPlayer.decideNextCall(
+                    currentQuantity,
+                    currentFace,
+                    gameState.getTotalDiceCount()
+            );
+
+            response.append("🤖 Bot ruft: ").append(call);
+            handleNewCall(call, botPlayer);
+        }
+
+        return response.toString();
+    }
+
+    private String showDice() {
+        StringBuilder sb = new StringBuilder("🎲 Alle Würfel:\n");
+        for (Player p : gameState.getPlayers()) {
+            sb.append(p.getName())
+                    .append(": ")
+                    .append(p.revealDice())
+                    .append("\n");
+        }
+        return sb.toString();
+    }
+
+    public void handleHumanReroll(String input) {
+        Player player = gameState.getCurrentPlayer();
+        Scanner fakeScanner = new Scanner(System.in);
+        handleReroll(player, input, fakeScanner);
+    }
 }

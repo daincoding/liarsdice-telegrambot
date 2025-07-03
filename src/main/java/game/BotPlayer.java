@@ -54,7 +54,7 @@ public class BotPlayer extends Player {
         if (hasUsedReroll()){
             return false;
         }
-        return random.nextDouble() < 0.20;
+        return random.nextDouble() < 0.90;
     }
 
     //📝 What dice the Bot wants to reroll
@@ -86,6 +86,11 @@ public class BotPlayer extends Player {
 
         int quantity;
         int faceValue;
+
+        if (currentQuantity >= totalDice && currentFace == 6) {
+            System.out.println("🤖 Bot detects max call - must call lie!");
+            return "lie";
+        }
 
         if (willBluff && currentQuantity > 0) {
             // Bot attempts a true bluff
