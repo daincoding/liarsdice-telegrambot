@@ -186,28 +186,40 @@ public class MyGameBot extends TelegramLongPollingBot {
 
         if (callLie) {
             round.resolveLie();
+
+            for (Player p : state.getPlayers()) {
+                p.rollAllDice();
+            }
+
             return "🤖 Bot ruft LIE!\n" + buildRoundSummary(state);
         } else {
             if (!bot.hasUsedReroll() && bot.shouldReroll()) {
                 List<Integer> rerollIndices = bot.chooseDiceToReroll();
                 bot.rerollSelectedDice(rerollIndices);
                 bot.useReroll();
+
+                return "🤖 Bot entscheidet sich zum Reroll!\n"
+                        + "\n" + botMakesCall(bot, state);
+            } else {
+                return botMakesCall(bot, state);
             }
-
-            String call = bot.decideNextCall(
-                    currentQuantity,
-                    currentFace,
-                    state.getTotalDiceCount()
-            );
-
-            state.setCurrentCall(
-                    Integer.parseInt(call.split(" ")[0]),
-                    Integer.parseInt(call.split(" ")[1])
-            );
-            state.advanceTurn();
-
-            return "🤖 Bot calls: " + call;
         }
+    }
+
+    private String botMakesCall(BotPlayer bot, GameState state) {
+        String call = bot.decideNextCall(
+                state.getCurrentQuantityCalled(),
+                state.getCurrentFaceValueCalled(),
+                state.getTotalDiceCount()
+        );
+
+        state.setCurrentCall(
+                Integer.parseInt(call.split(" ")[0]),
+                Integer.parseInt(call.split(" ")[1])
+        );
+        state.advanceTurn();
+
+        return "🤖 Bot calls: " + call;
     }
 
     private String buildRoundSummary(GameState state) {

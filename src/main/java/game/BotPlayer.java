@@ -54,7 +54,7 @@ public class BotPlayer extends Player {
         if (hasUsedReroll()){
             return false;
         }
-        return random.nextDouble() < 0.90;
+        return random.nextDouble() < 0.10;
     }
 
     //📝 What dice the Bot wants to reroll
