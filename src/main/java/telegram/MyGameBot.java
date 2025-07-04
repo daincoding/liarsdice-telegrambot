@@ -20,7 +20,7 @@ public class MyGameBot extends TelegramLongPollingBot {
 
     private final String botToken;
     private final String botUsername;
-    private final Map<Long, GameSession> gameSessions = new HashMap<>();
+    private final Map<Long, GameSession> gameSessions = new HashMap<>(); // <-- Maps damit einzelne Verbindungen durch chatID die Keys bekommen und jeder spielen kann
 
     //endregion
 
@@ -36,32 +36,37 @@ public class MyGameBot extends TelegramLongPollingBot {
 
     //region 🏁 Start Options
 
+    // 📝 Dies ist die zentrale Methode des Telegram-Bots.
+//     Sie wird bei jeder eingehenden Nachricht von Telegram aufgerufen.
+//     Hier entscheidet der Bot, wie er auf verschiedene Befehle oder Spielzüge reagiert.
+
     @Override
     public void onUpdateReceived(Update update) {
         if (update.hasMessage() && update.getMessage().hasText()) {
             Message message = update.getMessage();
-            Long chatId = message.getChatId();
-            String incomingText = message.getText().trim();
+            Long chatId = message.getChatId(); // <-- speichert die Chat-ID, damit die Antwort später an den richtigen Nutzer zurückgeschickt wird
+            String incomingText = message.getText().trim(); // <-- entfernt überflüssige Leerzeichen
 
             System.out.println("✅ Incoming from Telegram [" + chatId + "]: " + incomingText);
 
             String response;
 
+            // 📝 Hier wird geprüft, ob der User einen bestimmten Befehl geschickt hat.
             if (incomingText.equalsIgnoreCase("/start")) {
-                response = getWelcomeText();
+                response = getWelcomeText(); // <-- ruft Begrüßungstext auf
             } else if (incomingText.equalsIgnoreCase("/help")) {
-                response = getHelpText();
+                response = getHelpText(); // <-- ruft Hilfetext auf
             } else if (incomingText.equalsIgnoreCase("/rules")) {
-                response = getRulesText();
+                response = getRulesText(); // <-- ruft Spielregeln auf
             } else if (incomingText.equalsIgnoreCase("/newgame")) {
-                response = startNewGame(chatId, message.getFrom().getFirstName());
+                response = startNewGame(chatId, message.getFrom().getFirstName()); // <-- startet ein neues Spiel
             } else if (incomingText.equalsIgnoreCase("/endgame")) {
-                response = endGame(chatId);
+                response = endGame(chatId); // <-- beendet ein laufendes Spiel
             } else {
-                response = handleGameInput(chatId, incomingText);
+                response = handleGameInput(chatId, incomingText); // <-- behandelt alle anderen Texteingaben als Spielzüge
             }
 
-            sendTextMessage(chatId.toString(), response);
+            sendTextMessage(chatId.toString(), response); // <-- sendet die generierte Antwort zurück an den User
         }
     }
 
@@ -146,16 +151,29 @@ public class MyGameBot extends TelegramLongPollingBot {
                 + "\n\n*Mach deinen ersten Call* – z. B. `2 3`.";
     }
 
+    /**
+     * 📝 Diese Methode verarbeitet alle Texteingaben des Spielers,
+     * die keine Bot-Kommandos wie /start oder /newgame sind.
+     *
+     * Je nach Inhalt der Eingabe wird entschieden:
+     * - Lüge auflösen
+     * - Reroll ausführen
+     * - Neuen Call machen
+     *
+     * Außerdem wird hier geprüft, ob der Bot nach dem Spielzug an der Reihe ist.
+     */
     private String handleGameInput(Long chatId, String input) {
-        GameSession session = gameSessions.get(chatId);
+        GameSession session = gameSessions.get(chatId); // <-- Trennung der Sessions für verschiedene Nutzer
 
         if (session == null) {
             return "⚠️ Du hast noch kein Spiel gestartet. Nutze /newgame.";
         }
 
+        // 📝 Lädt den aktuellen Spielzustand und die Logik-Instanz.
         GameState state = session.getGameState();
         RoundLogic round = session.getRoundLogic();
 
+        // 📝 Ermittelt, welcher Spieler gerade an der Reihe ist.
         Player currentPlayer = state.getCurrentPlayer();
 
         if (currentPlayer instanceof BotPlayer) {
@@ -163,8 +181,13 @@ public class MyGameBot extends TelegramLongPollingBot {
         }
 
         String result;
+
+        // 📝 Prüft, ob der Spieler „lie“ eingegeben hat.
         if (input.equalsIgnoreCase("lie")) {
+            // 📝 Löst die Prüfung auf, ob der letzte Call eine Lüge war.
             String lieResolution = round.resolveLie();
+
+            // 📝 Alle Würfel werden nach einer Lüge neu gewürfelt.
             rerollAllDice(state);
 
             result = "🙅 *Du hast Lüge gerufen!*\n\n"
@@ -172,18 +195,23 @@ public class MyGameBot extends TelegramLongPollingBot {
                     + "\n\n" + buildRoundSummary(state)
                     + "\n🔄 *Neue Runde gestartet!* Mach deinen ersten Call.";
         } else if (input.startsWith("reroll")) {
+            // 📝 Spieler will einzelne Würfel neu würfeln.
             result = handleReroll(input, currentPlayer, round, state);
         } else {
+            // 📝 Andernfalls interpretiert es die Eingabe als neuen Call (z. B. „2 5“).
             result = handleNewCall(input, currentPlayer, round, state);
         }
 
+        // 📝 Nachdem der Spieler gezogen hat, prüft die Schleife,
+        // ob der Bot nun an der Reihe ist, und lässt ihn ggf. mehrfach agieren.
         while (!state.isGameOver() && state.getCurrentPlayer() instanceof BotPlayer) {
             result += "\n\n" + handleBotTurn(round, state);
         }
 
         if (state.isGameOver()) {
+            // 📝 Wenn das Spiel vorbei ist, wird der Gewinner ausgegeben.
             result += "\n\n🎉 *GAME OVER!* \n🏆 Gewinner: " + state.getWinner().getName();
-            gameSessions.remove(chatId);
+            gameSessions.remove(chatId); // <-- Session wird entfernt, damit der User neu starten kann
         }
 
         return result;

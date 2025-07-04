@@ -19,33 +19,41 @@ public class BotPlayer extends Player {
 
     //region ⚙️ Methods
 
-    // 📝BOT DECISION IF WE ACCUSE OF LYING
+    // 📝 BOT-ENTSCHEIDUNG, OB EINE LÜGE GERUFEN WIRD
     public boolean shouldCallLie(int currentQuantity, int faceValue, int totalDiceInGame) {
+        // 📝 Zählt, wie viele Würfel der Bot selbst vom gewünschten Wert hat.
         int botCount = countDiceOfFace(faceValue);
 
+        // 📝 Anzahl der Würfel, die dem Bot unbekannt sind (also die der anderen Spieler).
         int unknownDice = totalDiceInGame - getDiceCount();
+
+        // 📝 Wie viele Würfel vom Gegner benötigt würden, um die Behauptung wahr zu machen.
         int neededFromOthers = currentQuantity - botCount;
 
         if (neededFromOthers <= 0) {
-            // The Bot has enough Dice on its own to satisfy the Call he wants to do.
+            // 📝 Der Bot hat genug Würfel selbst, um den Call zu decken → niemals Lüge rufen.
             return false;
         }
 
-        double probabilityOtherHasEnough = calculateProbability(unknownDice, neededFromOthers, faceValue);
+        // 📝 Berechnet die Wahrscheinlichkeit, dass die unbekannten Würfel genügend passende Augen zeigen.
+        double probabilityOtherHasEnough = calculateProbability(
+                unknownDice,
+                neededFromOthers,
+                faceValue
+        );
 
-        // Decision thresholds:
-
+        // 📝 Entscheidung auf Basis der Wahrscheinlichkeit:
         if (probabilityOtherHasEnough >= 0.7) {
-            // Looks safe → never challenge
+            // 📝 Sehr wahrscheinlich wahr → niemals Lüge rufen.
             return false;
         } else if (probabilityOtherHasEnough >= 0.4) {
-            // Possibly true → rarely challenge
+            // 📝 Könnte wahr sein → selten Lüge rufen (10 %).
             return random.nextDouble() < 0.10;
         } else if (probabilityOtherHasEnough >= 0.2) {
-            // Suspicious → challenge sometimes
+            // 📝 Verdächtig → manchmal Lüge rufen (30 %).
             return random.nextDouble() < 0.30;
         } else {
-            // Extremely unlikely → usually challenge
+            // 📝 Extrem unwahrscheinlich → oft Lüge rufen (60 %).
             return random.nextDouble() < 0.60;
         }
     }
@@ -151,29 +159,47 @@ public class BotPlayer extends Player {
     //endregion
 
     //region 🧮 Calculations
-    // 📝Calculate binomial probability for getting at least needed successes.
+    // 📝 Berechnet die kumulierte Wahrscheinlichkeit, dass unter den unbekannten Würfeln
+    // mindestens die benötigte Anzahl eines bestimmten Wertes vorkommt.
+    // Beispiel: Es werden mindestens 3 Fünfen unter 7 unbekannten Würfeln benötigt.
     private double calculateProbability(int unknownDice, int neededFromOthers, int faceValue) {
-        double p = 1.0 / 6.0;
-        double cumulative = 0.0;
+        double p = 1.0 / 6.0; // 📝 Wahrscheinlichkeit für eine bestimmte Zahl (z. B. eine Fünf) bei einem Würfelwurf.
+        double cumulative = 0.0; // 📝 Zwischenspeicher für die aufsummierte Wahrscheinlichkeit.
 
+        // 📝 Schleife über alle möglichen Anzahlen des gewünschten Wertes (von neededFromOthers bis alle unknownDice).
         for (int i = neededFromOthers; i <= unknownDice; i++) {
             cumulative += binomialProbability(unknownDice, i, p);
+            // 📝 Addiert die Wahrscheinlichkeit, dass genau i der unknownDice den gesuchten Wert zeigen.
         }
+
+        // 📝 Gibt die Wahrscheinlichkeit zurück, mindestens neededFromOthers Erfolge zu haben.
         return cumulative;
     }
 
 
-    // 📝 Calculation Helper
+    // 📝 Hilfsmethode zur Berechnung der Binomial-Wahrscheinlichkeit:
+    // Berechnet die Wahrscheinlichkeit dafür, dass bei n Würfen
+    // genau k Würfel einen bestimmten Wert zeigen.
+    // Formel: P(X = k) = (n über k) * p^k * (1-p)^(n-k)
     private double binomialProbability(int n, int k, double p) {
+        // 📝 Berechnung der Anzahl möglicher Kombinationen (n über k).
         double combinations = factorial(n) / (factorial(k) * factorial(n - k));
+
+        // 📝 Wahrscheinlichkeit, dass genau k Würfel den gesuchten Wert zeigen,
+        // multipliziert mit der Wahrscheinlichkeit, dass die übrigen (n-k) Würfel es nicht tun.
         return combinations * Math.pow(p, k) * Math.pow(1 - p, n - k);
     }
 
+    // 📝 Hilfsmethode zur Berechnung der Fakultät (n!).
+    // Beispiel: 5! = 5 × 4 × 3 × 2 × 1 = 120
     private double factorial(int n) {
         double result = 1.0;
+
+        // 📝 Multipliziert alle Zahlen von 2 bis n.
         for (int i = 2; i <= n; i++) {
             result *= i;
         }
+
         return result;
     }
 

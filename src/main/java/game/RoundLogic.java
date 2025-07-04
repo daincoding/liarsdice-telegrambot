@@ -156,7 +156,6 @@ public class RoundLogic {
     }
 
     // 📝 Handle making a new call
-
     public void handleNewCall(String input, Player currentPlayer) {
         try {
             String[] parts = input.split(" ");
@@ -246,7 +245,22 @@ public class RoundLogic {
                 && faceValue == 6;
     }
 
-    //endregion
+    private String showDice() {
+        StringBuilder sb = new StringBuilder("🎲 Alle Würfel:\n");
+        for (Player p : gameState.getPlayers()) {
+            sb.append(p.getName())
+                    .append(": ")
+                    .append(p.revealDice())
+                    .append("\n");
+        }
+        return sb.toString();
+    }
+
+    public void handleHumanReroll(String input) {
+        Player player = gameState.getCurrentPlayer();
+        Scanner fakeScanner = new Scanner(System.in);
+        handleReroll(player, input, fakeScanner);
+    }
 
     public String playBotTurn(BotPlayer botPlayer) {
         StringBuilder response = new StringBuilder();
@@ -289,20 +303,5 @@ public class RoundLogic {
         return response.toString();
     }
 
-    private String showDice() {
-        StringBuilder sb = new StringBuilder("🎲 Alle Würfel:\n");
-        for (Player p : gameState.getPlayers()) {
-            sb.append(p.getName())
-                    .append(": ")
-                    .append(p.revealDice())
-                    .append("\n");
-        }
-        return sb.toString();
-    }
-
-    public void handleHumanReroll(String input) {
-        Player player = gameState.getCurrentPlayer();
-        Scanner fakeScanner = new Scanner(System.in);
-        handleReroll(player, input, fakeScanner);
-    }
+    //endregion
 }
